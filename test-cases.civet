@@ -1,0 +1,325 @@
+ansiEscapes from ansi-escapes
+* as ansiCodes from ./fixtures/ansi-codes.civet
+
+Assertion ::=
+  | { assertion: 'matches', input: string, expectedOutput: string[] }
+  | { assertion: 'splits', input: string, expectedOutput: string[] }
+
+TestCase ::=
+  { testCase: string, assertions: Assertion[] }
+
+
+export function generateTestCases()
+  testCases: TestCase[] := []
+  return = testCases
+
+  function push(assertion: Assertion)
+    testCases.at(-1)!.assertions.push(assertion)
+
+  function matches(input: string, ...expectedOutput: string[])
+    push { assertion: 'matches', input, expectedOutput }
+
+  function splits(input: string, ...expectedOutput: string[])
+    push { assertion: 'splits', input, expectedOutput }
+
+  function matchesAllOf(input: string)
+    matches input, input
+
+  function doesNotMatch(input: string)
+    matches input, ...[]
+
+  function testCase(name: string, fn: =>)
+    testCases.push testCase: name, assertions: []
+    fn()
+
+  // Testing against codes found at: http://ascii-table.com/ansi-escape-sequences-vt-100.php
+  // (link which no longer exists)
+  testCase 'match ansi code in a string', =>
+    matches 'foo\x1B[4mcake\x1B[0m',
+      '\x1B[4m'
+      '\x1B[0m'
+
+    splits 'foo\x1B[4mcake\x1B[0m',
+      'foo'
+      '\x1B[4m'
+      'cake'
+      '\x1B[0m'
+
+    matches '\x1B[4mcake\x1B[0m',
+      '\x1B[4m'
+      '\x1B[0m'
+
+    matches 'foo\x1B[4mcake\x1B[0m',
+      '\x1B[4m'
+      '\x1B[0m'
+
+    matches '\x1B[0m\x1B[4m\x1B[42m\x1B[31mfoo\x1B[39m\x1B[49m\x1B[24mfoo\x1B[0m',
+      '\x1B[0m'
+      '\x1B[4m'
+      '\x1B[42m'
+      '\x1B[31m'
+      '\x1B[39m'
+      '\x1B[49m'
+      '\x1B[24m'
+      '\x1B[0m'
+
+    matches 'foo\x1B[mfoo',
+      '\x1B[m'
+
+
+  testCase 'match ansi code from ls command', =>
+    matches '\x1B[00;38;5;244m\x1B[m\x1B[00;38;5;33mfoo\x1B[0m',
+      '\x1B[00;38;5;244m'
+      '\x1B[m'
+      '\x1B[00;38;5;33m'
+      '\x1B[0m'
+
+
+  testCase 'match reset;setfg;setbg;italics;strike;underline sequence in a string', =>
+    matches '\x1B[0;33;49;3;9;4mbar\x1B[0m',
+      '\x1B[0;33;49;3;9;4m'
+      '\x1B[0m'
+
+    matches 'foo\x1B[0;33;49;3;9;4mbar', '\x1B[0;33;49;3;9;4m'
+
+
+  testCase 'match clear tabs sequence in a string', =>
+    matches 'foo\x1B[0gbar', '\x1B[0g'
+
+
+  testCase 'match clear line from cursor right in a string', =>
+    matches 'foo\x1B[Kbar', '\x1B[K'
+
+
+  testCase 'match clear screen in a string', =>
+    matches 'foo\x1B[2Jbar', '\x1B[2J'
+
+
+  testCase 'match terminal link', =>
+    for ST of [ '\x07', '\x1B\x5C', '\x9C' ]
+      matches `\x1B]8;k=v;https://example-a.com/?a_b=1&c=2#tit%20le${ST}click\x1B]8;;${ST}`,
+        `\x1B]8;k=v;https://example-a.com/?a_b=1&c=2#tit%20le${ST}`
+        `\x1B]8;;${ST}`
+
+      matches `\x1B]8;;mailto:no-reply@mail.com${ST}mail-me\x1B]8;;${ST}`,
+        `\x1B]8;;mailto:no-reply@mail.com${ST}`
+        `\x1B]8;;${ST}`
+
+
+  testCase 'match terminal link with plus in URL', =>
+    for ST of ['\x07', '\x1B\x5C', '\x9C']
+      seqOpen := `\x1B]8;;https://www.example.com/?q=hello+world${ST}`
+      seqClose := `\x1B]8;;${ST}`
+      value := `${seqOpen}hello${seqClose}`
+      splits value, seqOpen, 'hello', seqClose
+
+
+  testCase 'match "change icon name and window title" in string', =>
+    matches '\x1B]0;sg@tota:~/git/\x07\x1B[01;32m[sg@tota\x1B[01;37m misc-tests\x1B[01;32m]$',
+      '\x1B]0;sg@tota:~/git/\x07'
+      '\x1B[01;32m'
+      '\x1B[01;37m'
+      '\x1B[01;32m'
+
+
+  testCase 'match colon-separated sequence arguments', =>
+    matchesAllOf '\x1B[38:2:68:68:68:48:2:0:0:0m'
+
+
+  testCase 'match colon-separated underline variants', =>
+    matchesAllOf '\x1B[4:0m'
+    matchesAllOf '\x1B[4:1m'
+    matchesAllOf '\x1B[4:2m'
+    matchesAllOf '\x1B[4:3m'
+    matchesAllOf '\x1B[4:4m'
+    matchesAllOf '\x1B[4:5m'
+
+
+  testCase 'match colon-separated indexed color (38:5)', =>
+    matchesAllOf '\x1B[38:5:123m'
+
+
+  testCase 'match colon-separated indexed background color (48:5)', =>
+    matchesAllOf '\x1B[48:5:200m'
+
+
+  testCase 'match colon-separated underline color palette index (58:5)', =>
+    matchesAllOf '\x1B[58:5:200m'
+
+
+  testCase 'match colon-separated RGB colors (38:2::R:G:B and 48:2::R:G:B)', =>
+    matchesAllOf '\x1B[38:2::12:34:56m'
+    matchesAllOf '\x1B[48:2::200:201:202m'
+
+
+  testCase 'match colon-separated underline color RGB (58:2::R:G:B)', =>
+    matchesAllOf '\x1B[58:2::255:0:0m'
+
+
+  testCase 'match colon-separated RGBA foreground/background (38:6, 48:6)', =>
+    matchesAllOf '\x1B[38:6::255:0:0:128m'
+    matchesAllOf '\x1B[48:6::0:0:0:64m'
+
+
+  testCase 'colon-separated sequences should not overconsume', =>
+    samples := [
+      '\x1B[4:5m'
+      '\x1B[38:5:123m'
+      '\x1B[58:2::255:0:0m'
+      '\x1B[38:2::12:34:56m'
+      '\x1B[48:2::200:201:202m'
+    ]
+
+    for inputString of samples
+      splits inputString + 'X', inputString, 'X'
+
+
+  testCase 'does not match bracketed text without ESC', =>
+    doesNotMatch '[38:2:68:68:68m'
+    doesNotMatch '[4:5m'
+    doesNotMatch 'some [0m text'
+    doesNotMatch 'plain [58:2::255:0:0m words'
+
+
+  testCase 'does not match incomplete CSI', =>
+    doesNotMatch '\x1B['
+
+
+  testCase 'does not match ESC followed by unsupported final', =>
+    doesNotMatch 'pre\\x1B`post'
+
+
+  consumptionCharacters := `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+1234567890-=[]{};':"./>?,\\|`
+
+  function splitsWitoutOverconsumption(escapeCode: string, ...expectedSplitOutput: string[])
+      expectedSplitOutput.push(escapeCode) unless expectedSplitOutput#
+      for chr of consumptionCharacters
+        splits escapeCode + chr, ...expectedSplitOutput, chr
+
+  // Testing against extended codes (excluding codes ending in 0-9)
+  for [codeSetKey, codeSetValue] of Object.entries(ansiCodes)
+    for [code, codeInfo] of codeSetValue when code is not like /\d$/
+        ecode := `\x1B${code}`
+
+        testCase `${codeSetKey} - ${code} → ${codeInfo[0]}`, =>
+          string := `hel${ecode}lo`
+          matches string, ecode
+          splits string, 'hel', ecode, 'lo'
+
+        testCase `${codeSetKey} - ${code} should not overconsume`, =>
+          splitsWitoutOverconsumption ecode
+
+  do
+    {
+      cursorTo // takes 1 or 2 integer arguments
+      cursorMove // takes 1 or 2 integer arguments
+      eraseLines // takes 1 integer argument, generates multiple ansi codes
+
+      // takes 1 integer argument
+      cursorUp
+      cursorDown
+      cursorForward
+      cursorBackward
+
+      // specific functions
+      link
+      image
+
+      iTerm
+      ConEmu
+
+      setCwd
+
+      // strings that are multiple ansi codes
+      clearTerminal
+      clearViewport
+
+      // static codes that are just strings
+      ...ansiEscapeStaticCodes
+
+    } := ansiEscapes
+
+
+    for [key, escapeCode] of Object.entries(ansiEscapeStaticCodes)
+      testCase `ansi-escapes ${key} (string)`, =>
+        splitsWitoutOverconsumption escapeCode
+
+
+    testCase 'ansi-escapes clearTerminal', =>
+      splitsWitoutOverconsumption clearTerminal,
+        "\u001b[2J"
+        "\u001b[3J"
+        "\x1B[H"
+
+
+    testCase 'ansi-escapes clearViewport', =>
+      splitsWitoutOverconsumption clearViewport,
+        "\u001b[2J"
+        "\x1B[H"
+
+
+    testCase 'ansi-escapes cursorMove', =>
+      splitsWitoutOverconsumption cursorMove(12, 34),
+        "\u001b[12C"
+        "\u001b[34B"
+
+
+    testCase 'ansi-escapes eraseLines', =>
+      splitsWitoutOverconsumption eraseLines(2),
+        '\x1B[2K'
+        '\x1B[1A'
+        '\x1B[2K'
+        '\x1B[G'
+
+
+    testCase 'ansi-escapes cursorTo (arity (1, 2])', =>
+      splitsWitoutOverconsumption cursorTo(1)
+      splitsWitoutOverconsumption cursorTo(23)
+      splitsWitoutOverconsumption cursorTo(4, 56)
+      splitsWitoutOverconsumption cursorTo(45, 5)
+      splitsWitoutOverconsumption cursorTo(78, 90)
+
+
+    for name, fn in {
+      cursorUp
+      cursorDown
+      cursorForward
+      cursorBackward
+    }
+      testCase `ansi-escapes ${name} (arity 1)`, =>
+        splitsWitoutOverconsumption fn!(1)
+        splitsWitoutOverconsumption fn!(23)
+
+
+    testCase 'ansi-escapes link', =>
+      splitsWitoutOverconsumption link('click here', 'http://example.com'),
+        '\x1B]8;;http://example.com\x07'
+        'click here'
+        '\x1B]8;;\x07'
+
+
+    testCase 'ansi-escapes image', =>
+      buffer := Buffer.from([1, 3, 3, 7])
+      splitsWitoutOverconsumption image(buffer)
+      splitsWitoutOverconsumption image(buffer, width: 234, height: 1, preserveAspectRatio: true)
+      splitsWitoutOverconsumption image(buffer, width: 'auto', height: 'auto', preserveAspectRatio: false)
+
+
+    testCase 'ansi-escapes setCwd (which is juse iTerm.setCwd followed by ConEmu.setCwd)', =>
+      splitsWitoutOverconsumption setCwd('~/Desktop'), iTerm.setCwd('~/Desktop'), ConEmu.setCwd('~/Desktop')
+      splitsWitoutOverconsumption setCwd('/My Projects'), iTerm.setCwd('/My Projects'), ConEmu.setCwd('/My Projects')
+
+
+    testCase 'ansi-escapes ConEmu setCwd', =>
+      splitsWitoutOverconsumption ConEmu.setCwd('~/Desktop')
+      splitsWitoutOverconsumption ConEmu.setCwd('/My Projects')
+
+
+    testCase 'ansi-escapes iTerm setCwd', =>
+      splitsWitoutOverconsumption iTerm.setCwd('~/Desktop')
+      splitsWitoutOverconsumption iTerm.setCwd('/My Projects')
+
+
+    testCase 'ansi-escapes iTerm annotation', =>
+      splitsWitoutOverconsumption iTerm.annotation('Some annotation message')
+      splitsWitoutOverconsumption iTerm.annotation('Some annotation message', x: 1, y: 2, length: 40, isHidden: true)

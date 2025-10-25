@@ -1,0 +1,44 @@
+assert from node:assert
+makeAnsiRegex from ./index.civet
+{ generateTestCases } from ./test-cases.civet
+
+
+ansiRegex := makeAnsiRegex()
+ansiRegexOnlyFirst := makeAnsiRegex(onlyFirst: true)
+ansiRegexSplit := new RegExp(`(${ansiRegex.source})`)
+
+
+function matches(input: string, ...expectedOutput: string[])
+  assert.deepEqual
+    [...input.match(ansiRegex) ?? []]
+    expectedOutput
+
+
+function splits(input: string, ...expectedOutput: string[])
+  assert.deepEqual
+    input.split(ansiRegexSplit).filter(!!&)
+    expectedOutput
+
+
+describe 'generic test cases', =>
+  skippedTestCases := [
+    'ansi-escapes beep (string)' // not detected by ansi-regex
+  ]
+
+  for { testCase, assertions } of generateTestCases()
+
+    if testCase is in skippedTestCases
+      continue
+
+    it testCase, =>
+      for { assertion, input, expectedOutput } of assertions
+        switch assertion
+          when 'matches' then matches input, ...expectedOutput
+          when 'splits'  then splits input, ...expectedOutput
+
+
+describe 'test cases specific to ansi-regex', =>
+  it 'matches only first', =>
+    matched := 'foo\x1B[4mcake\x1B[0m'.match(ansiRegexOnlyFirst)
+    assert.equal matched?#, 1
+    assert.equal matched?[0], '\x1B[4m'

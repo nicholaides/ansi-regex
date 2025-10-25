@@ -1,0 +1,25 @@
+esbuild from esbuild
+civetPlugin from @danielx/civet/esbuild
+
+await Promise.all
+  for moduleFormat of ['cjs', 'esm'] as const
+    esbuild.build {
+      entryPoints: [
+        'index.civet'
+        'fixtures/ansi-codes.civet'
+        'test-cases.civet'
+      ]
+      plugins: [
+        civetPlugin {
+          ts: "civet"
+          emitDeclaration: moduleFormat == 'cjs'
+          +typecheck
+        }
+      ]
+      format: moduleFormat
+      outdir: `dist/${moduleFormat}/`
+      platform: 'node'
+      +bundle
+      +keepNames
+      +sourcemap
+    }

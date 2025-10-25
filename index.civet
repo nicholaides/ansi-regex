@@ -1,0 +1,28 @@
+export default function ansiRegex({ onlyFirst = false } = {})
+	pattern := ///
+		(?: // OSC sequence:  ESC] ... ST (non-greedy until the first ST)
+			\x1B]  // "ESC]"
+			[\s\S]*?
+
+			// Valid terminator sequences are BEL, ESC\, and 0x9C
+			(?:            // the ST
+				\x07         // BEL
+				| \x1B\\     // "ESC\"
+				| \x9C       // ST
+			)
+		)
+		|
+		(?: // CSI and related: ESC/C1, optional intermediates, optional params (supports ; and :) then final byte
+			[\x1B\x9B]    // ESC or C1
+			[\\[()#;?]*
+			(?:
+				\d{1,4}
+				(?:
+					[;:] \d{0,4}
+				)*
+			)?
+			[\dA-PR-TZcf-nq-uy=><~]
+		)
+	///
+
+	new RegExp pattern, onlyFirst ? undefined : 'g'
