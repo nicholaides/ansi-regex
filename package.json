@@ -6,9 +6,6 @@
   "sideEffects": false,
   "author": "Mike Nicholaides <mike@nicholaides.com>",
   "license": "MIT",
-  "dependencies": {
-    "ansi-escapes": "7.1.1"
-  },
   "files": [
     "dist/**/*"
   ],
@@ -30,6 +27,8 @@
     }
   },
   "devDependencies": {
+    "ansi-escapes": "7.1.1",
+
     "@danielx/civet": "^0.10.7",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.15.3",

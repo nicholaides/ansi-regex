@@ -34,10 +34,3 @@ for f in dist/**/*.civet.d.ts; do
   # rename all .civet.d.ts files to .d.ts
   mv "$f" "${f%.civet.d.ts}.d.ts"
 done
-
-# hack to rewrite require extension
-# adjust .js files
-for f in dist/**/*.js; do
-  # replace all .civet imports with .js
-  sed_i 's/\.civet"/.js"/g' "$f"
-done

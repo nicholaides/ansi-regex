@@ -6,5 +6,6 @@ Fork of [ansi-regex](https://github.com/chalk/ansi-regex) with making it useful 
 - improved test suite
 - written in Civet for improved clarity
 - CJS and ESM support
+- commit ./dist to make it easy to use from Github
 
 Version number tracks https://github.com/chalk/ansi-regex
