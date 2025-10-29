@@ -231,8 +231,10 @@ export function generateTestCases()
       setCwd
 
       // strings that are multiple ansi codes
-      clearTerminal
       clearViewport
+
+      // ignored because it's a different set of basic codes on different termainals and not worth testing
+      clearTerminal: _clearTerminal_IGNORE_ME
 
       // static codes that are just strings
       ...ansiEscapeStaticCodes
@@ -243,13 +245,6 @@ export function generateTestCases()
     for [key, escapeCode] of Object.entries(ansiEscapeStaticCodes)
       testCase `ansi-escapes ${key} (string)`, =>
         splitsWitoutOverconsumption escapeCode
-
-
-    testCase 'ansi-escapes clearTerminal', =>
-      splitsWitoutOverconsumption clearTerminal,
-        "\u001b[2J"
-        "\u001b[3J"
-        "\x1B[H"
 
 
     testCase 'ansi-escapes clearViewport', =>

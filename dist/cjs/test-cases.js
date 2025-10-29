@@ -666,8 +666,9 @@ function generateTestCases() {
       ConEmu: ConEmu2,
       setCwd: setCwd2,
       // strings that are multiple ansi codes
-      clearTerminal: clearTerminal2,
       clearViewport: clearViewport2,
+      // ignored because it's a different set of basic codes on different termainals and not worth testing
+      clearTerminal: _clearTerminal_IGNORE_ME,
       // static codes that are just strings
       ...ansiEscapeStaticCodes
     } = base_exports;
@@ -676,14 +677,6 @@ function generateTestCases() {
         return splitsWitoutOverconsumption(escapeCode);
       });
     }
-    testCase("ansi-escapes clearTerminal", () => {
-      return splitsWitoutOverconsumption(
-        clearTerminal2,
-        "\x1B[2J",
-        "\x1B[3J",
-        "\x1B[H"
-      );
-    });
     testCase("ansi-escapes clearViewport", () => {
       return splitsWitoutOverconsumption(
         clearViewport2,
