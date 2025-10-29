@@ -18,8 +18,7 @@ await Promise.all
       ]
       format: moduleFormat
       outdir: `dist/${moduleFormat}/`
-      platform: 'node'
-      +bundle
+      -bundle
       +keepNames
-      +sourcemap
+      -sourcemap
     }
